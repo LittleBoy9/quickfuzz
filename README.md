@@ -14,6 +14,12 @@
   Optimized for small datasets. Built for speed.
 </p>
 
+<p align="center">
+  <a href="https://littleboy9.github.io/quickfuzz/"><strong>Website</strong></a> &nbsp;&middot;&nbsp;
+  <a href="https://www.npmjs.com/package/quickfuzz"><strong>npm</strong></a> &nbsp;&middot;&nbsp;
+  <a href="https://github.com/LittleBoy9/quickfuzz"><strong>GitHub</strong></a>
+</p>
+
 ---
 
 ## Why quickfuzz?

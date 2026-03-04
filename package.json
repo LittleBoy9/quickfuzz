@@ -35,12 +35,12 @@
   ],
   "author": "Sounak Das",
   "license": "MIT",
-  "homepage": "https://www.npmjs.com/package/quickfuzz",
+  "homepage": "https://littleboy9.github.io/quickfuzz/",
   "repository": {
     "type": "git",
-    "url": "https://github.com/sounakdas/quickfuzz"
+    "url": "https://github.com/LittleBoy9/quickfuzz"
   },
   "bugs": {
-    "url": "https://github.com/sounakdas/quickfuzz/issues"
+    "url": "https://github.com/LittleBoy9/quickfuzz/issues"
   }
 }
