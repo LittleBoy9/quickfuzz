@@ -10,6 +10,7 @@
 
 <p align="center">
   A blazing-fast, zero-dependency fuzzy search library for JavaScript & TypeScript.<br/>
+  Lightweight fuzzy matching for autocomplete, command palettes, and filter UIs.<br/>
   Optimized for small datasets. Built for speed.
 </p>
 
@@ -17,7 +18,7 @@
 
 ## Why quickfuzz?
 
-Most fuzzy search libraries are built for large-scale, server-side search. They come with complex configs, heavy bundle sizes, and features you'll never use.
+Looking for a **fast fuzzy search** library for **JavaScript** or **TypeScript**? Most fuzzy search libraries are built for large-scale, server-side search. They come with complex configs, heavy bundle sizes, and features you'll never use.
 
 **quickfuzz** is different. It's built for the **90% use case** — client-side search over small-to-medium datasets where every millisecond matters:
 
