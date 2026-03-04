@@ -1,0 +1,46 @@
+{
+  "name": "fuzzly",
+  "version": "1.0.0",
+  "description": "A fast fuzzy search library for small datasets.",
+  "main": "dist/index.obfuscated.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist/index.obfuscated.js",
+    "dist/index.d.ts"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "ts-node src/test.ts",
+    "obfuscate": "javascript-obfuscator ./dist/index.js --output ./dist/index.obfuscated.js --compact true --control-flow-flattening true --dead-code-injection true --string-array true --string-array-threshold 0.75 --reserved-names 'createFuzzySearch,FuzzySearchResult'",
+    "prepublishOnly": "npm run build && npm run obfuscate"
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.1",
+    "typescript": "^5.1.6",
+    "javascript-obfuscator": "^4.1.0"
+  },
+  "keywords": [
+    "fuzzy",
+    "search",
+    "fast",
+    "lightweight",
+    "autocomplete",
+    "filter",
+    "small",
+    "datasets",
+    "javascript",
+    "typescript",
+    "nodejs",
+    "browser"
+  ],
+  "author": "Sounak Das",
+  "license": "MIT",
+  "homepage": "https://www.npmjs.com/package/fuzzly",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sounakdas/fuzzly"
+  },
+  "bugs": {
+    "url": "https://github.com/sounakdas/fuzzly/issues"
+  }
+}
