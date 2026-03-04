@@ -1,6 +1,6 @@
 import { createFuzzySearch } from "./index";
 
-console.log("=== Fuzzly Test Suite ===\n");
+console.log("=== quickfuzz Test Suite ===\n");
 
 // Test 1: Array of strings - loose match
 const fruits = ["apple", "pineapple", "grape", "appletini", "banana", "mango"];

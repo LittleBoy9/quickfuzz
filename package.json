@@ -1,5 +1,5 @@
 {
-  "name": "fuzzly",
+  "name": "quickfuzz",
   "version": "1.0.0",
   "description": "A fast fuzzy search library for small datasets.",
   "main": "dist/index.obfuscated.js",
@@ -35,12 +35,12 @@
   ],
   "author": "Sounak Das",
   "license": "MIT",
-  "homepage": "https://www.npmjs.com/package/fuzzly",
+  "homepage": "https://www.npmjs.com/package/quickfuzz",
   "repository": {
     "type": "git",
-    "url": "https://github.com/sounakdas/fuzzly"
+    "url": "https://github.com/sounakdas/quickfuzz"
   },
   "bugs": {
-    "url": "https://github.com/sounakdas/fuzzly/issues"
+    "url": "https://github.com/sounakdas/quickfuzz/issues"
   }
 }

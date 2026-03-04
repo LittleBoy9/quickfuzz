@@ -1,12 +1,12 @@
 <p align="center">
-  <img src="https://img.shields.io/npm/v/fuzzly?color=blue&label=npm" alt="npm version" />
-  <img src="https://img.shields.io/bundlephobia/minzip/fuzzly?color=green&label=size" alt="bundle size" />
-  <img src="https://img.shields.io/npm/l/fuzzly" alt="license" />
+  <img src="https://img.shields.io/npm/v/quickfuzz?color=blue&label=npm" alt="npm version" />
+  <img src="https://img.shields.io/bundlephobia/minzip/quickfuzz?color=green&label=size" alt="bundle size" />
+  <img src="https://img.shields.io/npm/l/quickfuzz" alt="license" />
   <img src="https://img.shields.io/badge/types-included-blue" alt="typescript" />
   <img src="https://img.shields.io/badge/dependencies-0-brightgreen" alt="zero deps" />
 </p>
 
-<h1 align="center">fuzzly</h1>
+<h1 align="center">quickfuzz</h1>
 
 <p align="center">
   A blazing-fast, zero-dependency fuzzy search library for JavaScript & TypeScript.<br/>
@@ -15,18 +15,18 @@
 
 ---
 
-## Why fuzzly?
+## Why quickfuzz?
 
 Most fuzzy search libraries are built for large-scale, server-side search. They come with complex configs, heavy bundle sizes, and features you'll never use.
 
-**fuzzly** is different. It's built for the **90% use case** — client-side search over small-to-medium datasets where every millisecond matters:
+**quickfuzz** is different. It's built for the **90% use case** — client-side search over small-to-medium datasets where every millisecond matters:
 
 - Autocomplete inputs
 - Command palettes (Ctrl+K)
 - Quick-find / filter UIs
 - Search bars for lists & tables
 
-| | fuzzly | Fuse.js |
+| | quickfuzz | Fuse.js |
 |---|---|---|
 | **1,000 items** | ~0.12ms | ~1.5ms |
 | **Bundle size** | ~4KB | ~20KB+ |
@@ -38,11 +38,11 @@ Most fuzzy search libraries are built for large-scale, server-side search. They 
 ## Installation
 
 ```bash
-npm install fuzzly
+npm install quickfuzz
 ```
 
 ```bash
-yarn add fuzzly
+yarn add quickfuzz
 ```
 
 ---
@@ -50,7 +50,7 @@ yarn add fuzzly
 ## Quick Start
 
 ```ts
-import { createFuzzySearch } from "fuzzly";
+import { createFuzzySearch } from "quickfuzz";
 
 const search = createFuzzySearch(["apple", "banana", "grape", "mango"]);
 
