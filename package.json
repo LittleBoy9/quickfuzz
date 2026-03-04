@@ -1,6 +1,6 @@
 {
   "name": "quickfuzz",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Blazing-fast, zero-dependency fuzzy search for JavaScript & TypeScript. Lightweight autocomplete, filter, and command palette search optimized for small datasets.",
   "main": "dist/index.obfuscated.js",
   "types": "dist/index.d.ts",
