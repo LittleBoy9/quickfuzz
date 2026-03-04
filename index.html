@@ -1,0 +1,1349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>quickfuzz — Blazing-fast fuzzy search</title>
+  <meta name="description" content="A blazing-fast, zero-dependency fuzzy search library for JavaScript & TypeScript. Optimized for small datasets. Built for speed." />
+  <meta name="theme-color" content="#0a0a1a" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    /* =========== RESET & BASE =========== */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg: #0a0a1a;
+      --bg2: #0f0f2a;
+      --surface: rgba(255,255,255,0.03);
+      --border: rgba(255,255,255,0.06);
+      --text: #e2e8f0;
+      --text-dim: #94a3b8;
+      --accent1: #7c3aed;
+      --accent2: #06b6d4;
+      --accent3: #8b5cf6;
+      --glow1: rgba(124,58,237,0.4);
+      --glow2: rgba(6,182,212,0.4);
+      --gradient: linear-gradient(135deg, var(--accent1), var(--accent2));
+      --font: 'Inter', -apple-system, sans-serif;
+      --mono: 'JetBrains Mono', monospace;
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      overflow-x: hidden;
+      line-height: 1.6;
+    }
+    a { color: var(--accent2); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* =========== PARTICLE CANVAS =========== */
+    #particles {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* =========== SCROLL REVEAL =========== */
+    .reveal {
+      opacity: 0;
+      transform: translateY(40px);
+      transition: opacity 0.8s ease, transform 0.8s ease;
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .reveal-delay-1 { transition-delay: 0.1s; }
+    .reveal-delay-2 { transition-delay: 0.2s; }
+    .reveal-delay-3 { transition-delay: 0.3s; }
+    .reveal-delay-4 { transition-delay: 0.4s; }
+    .reveal-delay-5 { transition-delay: 0.5s; }
+
+    /* =========== NAV =========== */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0;
+      z-index: 100;
+      padding: 1rem 2rem;
+      display: flex; justify-content: space-between; align-items: center;
+      background: rgba(10,10,26,0.8);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      transition: box-shadow 0.3s;
+    }
+    nav.scrolled { box-shadow: 0 4px 30px rgba(0,0,0,0.3); }
+    .nav-logo {
+      font-family: var(--mono);
+      font-weight: 700;
+      font-size: 1.25rem;
+      background: var(--gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .nav-links { display: flex; gap: 1.5rem; align-items: center; }
+    .nav-links a {
+      color: var(--text-dim);
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: color 0.3s;
+    }
+    .nav-links a:hover { color: var(--text); text-decoration: none; }
+    .nav-btn {
+      padding: 0.5rem 1.25rem;
+      background: var(--gradient);
+      border-radius: 8px;
+      color: #fff !important;
+      font-weight: 600;
+      font-size: 0.85rem;
+      transition: transform 0.2s, box-shadow 0.3s;
+    }
+    .nav-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 20px var(--glow1);
+      text-decoration: none;
+    }
+
+    /* =========== SECTION BASE =========== */
+    section {
+      position: relative;
+      z-index: 1;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 6rem 2rem;
+    }
+    .section-label {
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      color: var(--accent2);
+      margin-bottom: 0.75rem;
+    }
+    .section-title {
+      font-size: clamp(2rem, 5vw, 3rem);
+      font-weight: 800;
+      line-height: 1.2;
+      margin-bottom: 1.25rem;
+    }
+    .section-desc {
+      color: var(--text-dim);
+      font-size: 1.1rem;
+      max-width: 600px;
+      margin-bottom: 3rem;
+    }
+
+    /* =========== HERO =========== */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding-top: 5rem;
+    }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.4rem 1rem;
+      background: rgba(124,58,237,0.1);
+      border: 1px solid rgba(124,58,237,0.2);
+      border-radius: 999px;
+      font-size: 0.85rem;
+      color: var(--accent3);
+      margin-bottom: 2rem;
+      animation: fadeInDown 0.8s ease;
+    }
+    .hero-badge .dot {
+      width: 8px; height: 8px;
+      background: #22c55e;
+      border-radius: 50%;
+      animation: pulse-dot 2s infinite;
+    }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.5); }
+    }
+    @keyframes fadeInDown {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* GLITCH TITLE */
+    .hero-title {
+      font-size: clamp(3.5rem, 10vw, 7rem);
+      font-weight: 900;
+      font-family: var(--mono);
+      line-height: 1;
+      margin-bottom: 1.5rem;
+      position: relative;
+      animation: fadeInUp 1s ease 0.2s both;
+    }
+    .hero-title .gradient-text {
+      background: var(--gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      position: relative;
+    }
+    .hero-title:hover .gradient-text {
+      animation: glitch 0.3s ease;
+    }
+    @keyframes glitch {
+      0% { transform: translate(0); }
+      20% { transform: translate(-3px, 3px); }
+      40% { transform: translate(3px, -3px); }
+      60% { transform: translate(-2px, -2px); }
+      80% { transform: translate(2px, 2px); }
+      100% { transform: translate(0); }
+    }
+    .hero-title::after {
+      content: '';
+      position: absolute;
+      bottom: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 60%;
+      height: 2px;
+      background: var(--gradient);
+      filter: blur(2px);
+    }
+
+    .hero-tagline {
+      font-size: clamp(1.1rem, 2.5vw, 1.5rem);
+      color: var(--text-dim);
+      max-width: 650px;
+      margin-bottom: 2.5rem;
+      animation: fadeInUp 1s ease 0.4s both;
+    }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* INSTALL COMMAND */
+    .install-box {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.75rem 1.25rem;
+      margin-bottom: 2rem;
+      font-family: var(--mono);
+      font-size: 1rem;
+      animation: fadeInUp 1s ease 0.6s both;
+      transition: border-color 0.3s, box-shadow 0.3s;
+    }
+    .install-box:hover {
+      border-color: rgba(124,58,237,0.3);
+      box-shadow: 0 0 30px rgba(124,58,237,0.1);
+    }
+    .install-box .dollar { color: var(--accent2); }
+    .install-box code { color: var(--text); }
+    .copy-btn {
+      background: none; border: none;
+      color: var(--text-dim);
+      cursor: pointer;
+      padding: 0.4rem;
+      border-radius: 6px;
+      transition: color 0.2s, background 0.2s;
+      display: flex; align-items: center;
+    }
+    .copy-btn:hover { color: var(--text); background: rgba(255,255,255,0.05); }
+    .copy-btn.copied { color: #22c55e; }
+
+    /* CTA BUTTONS */
+    .hero-ctas {
+      display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;
+      animation: fadeInUp 1s ease 0.8s both;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.85rem 2rem;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 1rem;
+      transition: transform 0.2s, box-shadow 0.3s;
+      border: none;
+      cursor: pointer;
+      text-decoration: none !important;
+    }
+    .btn-primary {
+      background: var(--gradient);
+      color: #fff;
+      position: relative;
+      overflow: hidden;
+    }
+    .btn-primary::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .btn-primary:hover::before { opacity: 1; }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px var(--glow1);
+    }
+    .btn-secondary {
+      background: rgba(255,255,255,0.05);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover {
+      transform: translateY(-2px);
+      background: rgba(255,255,255,0.08);
+      box-shadow: 0 8px 30px rgba(255,255,255,0.05);
+    }
+
+    /* =========== STATS BAR =========== */
+    .stats-bar {
+      display: flex;
+      justify-content: center;
+      gap: 3rem;
+      flex-wrap: wrap;
+      margin-top: 4rem;
+      animation: fadeInUp 1s ease 1s both;
+    }
+    .stat {
+      text-align: center;
+    }
+    .stat-value {
+      font-size: 2.5rem;
+      font-weight: 800;
+      font-family: var(--mono);
+      background: var(--gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .stat-label {
+      font-size: 0.85rem;
+      color: var(--text-dim);
+      margin-top: 0.25rem;
+    }
+
+    /* =========== SPEED COMPARISON =========== */
+    .comparison {
+      padding: 4rem 0;
+    }
+    .speed-bars {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+      max-width: 700px;
+    }
+    .speed-item {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+    .speed-label {
+      font-family: var(--mono);
+      font-weight: 600;
+      font-size: 1rem;
+      min-width: 120px;
+      text-align: right;
+    }
+    .speed-track {
+      flex: 1;
+      height: 48px;
+      background: rgba(255,255,255,0.03);
+      border-radius: 12px;
+      overflow: visible;
+      position: relative;
+    }
+    .speed-fill {
+      height: 100%;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      padding: 0 1rem;
+      font-family: var(--mono);
+      font-weight: 700;
+      font-size: 0.95rem;
+      width: 0;
+      transition: width 1.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      position: relative;
+      overflow: visible;
+    }
+    .speed-fill.qf {
+      background: var(--gradient);
+      box-shadow: 0 0 30px var(--glow1);
+    }
+    .speed-fill.others {
+      background: rgba(255,255,255,0.08);
+      color: var(--text-dim);
+    }
+    .speed-fill::after {
+      content: '';
+      position: absolute;
+      top: 0; left: -100%;
+      width: 100%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+      animation: shimmer 2s infinite;
+    }
+    @keyframes shimmer {
+      0% { left: -100%; }
+      100% { left: 100%; }
+    }
+    .speed-tag {
+      position: absolute;
+      left: calc(100% + 0.75rem);
+      top: 50%;
+      transform: translateY(-50%);
+      background: linear-gradient(135deg, rgba(34,197,94,0.25), rgba(6,182,212,0.2));
+      color: #22c55e;
+      padding: 0.35rem 0.85rem;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      white-space: nowrap;
+      border: 1px solid rgba(34,197,94,0.25);
+      box-shadow: 0 0 20px rgba(34,197,94,0.15), inset 0 1px 0 rgba(255,255,255,0.1);
+      backdrop-filter: blur(8px);
+      text-shadow: 0 0 10px rgba(34,197,94,0.5);
+      animation: tag-glow 2s ease-in-out infinite alternate;
+    }
+    @keyframes tag-glow {
+      0% { box-shadow: 0 0 20px rgba(34,197,94,0.15), inset 0 1px 0 rgba(255,255,255,0.1); }
+      100% { box-shadow: 0 0 30px rgba(34,197,94,0.3), 0 0 60px rgba(34,197,94,0.1), inset 0 1px 0 rgba(255,255,255,0.15); }
+    }
+
+    /* =========== FEATURES =========== */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1.5rem;
+    }
+    .feature-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2rem;
+      transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s;
+      position: relative;
+      overflow: hidden;
+    }
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 2px;
+      background: var(--gradient);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .feature-card:hover::before { opacity: 1; }
+    .feature-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(124,58,237,0.2);
+      box-shadow: 0 12px 40px rgba(124,58,237,0.1);
+    }
+    .feature-icon {
+      width: 48px; height: 48px;
+      border-radius: 12px;
+      background: rgba(124,58,237,0.1);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem;
+      margin-bottom: 1.25rem;
+    }
+    .feature-card h3 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    .feature-card p {
+      color: var(--text-dim);
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+
+    /* =========== LIVE DEMO =========== */
+    .demo-container {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 2.5rem;
+      max-width: 700px;
+      position: relative;
+      overflow: hidden;
+    }
+    .demo-container::before {
+      content: '';
+      position: absolute;
+      top: -50%; left: -50%;
+      width: 200%; height: 200%;
+      background: conic-gradient(from 0deg, transparent, rgba(124,58,237,0.05), transparent 30%);
+      animation: rotate-bg 8s linear infinite;
+    }
+    @keyframes rotate-bg {
+      to { transform: rotate(360deg); }
+    }
+    .demo-inner { position: relative; z-index: 1; }
+    .demo-input-wrap {
+      position: relative;
+      margin-bottom: 1.5rem;
+    }
+    .demo-input {
+      width: 100%;
+      padding: 1rem 1rem 1rem 3rem;
+      background: rgba(0,0,0,0.3);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--text);
+      font-size: 1.1rem;
+      font-family: var(--font);
+      outline: none;
+      transition: border-color 0.3s, box-shadow 0.3s;
+    }
+    .demo-input:focus {
+      border-color: var(--accent1);
+      box-shadow: 0 0 20px var(--glow1);
+    }
+    .demo-input::placeholder { color: var(--text-dim); }
+    .search-icon {
+      position: absolute;
+      left: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-dim);
+    }
+    .demo-results {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      min-height: 200px;
+    }
+    .demo-result {
+      padding: 0.75rem 1rem;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-family: var(--mono);
+      font-size: 0.95rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      animation: resultSlideIn 0.3s ease both;
+      transition: background 0.2s;
+    }
+    .demo-result:hover { background: rgba(255,255,255,0.04); }
+    .demo-result:nth-child(1) { animation-delay: 0s; }
+    .demo-result:nth-child(2) { animation-delay: 0.05s; }
+    .demo-result:nth-child(3) { animation-delay: 0.1s; }
+    .demo-result:nth-child(4) { animation-delay: 0.15s; }
+    .demo-result:nth-child(5) { animation-delay: 0.2s; }
+    @keyframes resultSlideIn {
+      from { opacity: 0; transform: translateX(-10px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    .demo-result .match-char { color: var(--accent2); font-weight: 700; }
+    .demo-result .score {
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      background: rgba(255,255,255,0.04);
+      padding: 0.2rem 0.5rem;
+      border-radius: 6px;
+    }
+    .demo-placeholder {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 200px;
+      color: var(--text-dim);
+      font-size: 0.95rem;
+    }
+    .demo-time {
+      margin-top: 1rem;
+      font-family: var(--mono);
+      font-size: 0.85rem;
+      color: var(--text-dim);
+      text-align: right;
+    }
+    .demo-time span { color: #22c55e; font-weight: 600; }
+
+    /* =========== CODE EXAMPLES =========== */
+    .code-section {
+      max-width: 750px;
+    }
+    .code-tabs {
+      display: flex;
+      gap: 0.25rem;
+      margin-bottom: -1px;
+      position: relative;
+      z-index: 2;
+    }
+    .code-tab {
+      padding: 0.6rem 1.25rem;
+      background: transparent;
+      border: 1px solid transparent;
+      border-bottom: none;
+      border-radius: 10px 10px 0 0;
+      color: var(--text-dim);
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: var(--font);
+      transition: all 0.2s;
+    }
+    .code-tab.active {
+      background: rgba(255,255,255,0.04);
+      border-color: var(--border);
+      color: var(--text);
+    }
+    .code-tab:hover:not(.active) { color: var(--text); }
+    .code-block {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 0 12px 12px 12px;
+      padding: 1.5rem;
+      position: relative;
+      overflow-x: auto;
+    }
+    .code-block pre {
+      font-family: var(--mono);
+      font-size: 0.9rem;
+      line-height: 1.7;
+      white-space: pre;
+      color: var(--text-dim);
+    }
+    .code-block .copy-code {
+      position: absolute;
+      top: 0.75rem; right: 0.75rem;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-dim);
+      padding: 0.4rem 0.6rem;
+      cursor: pointer;
+      font-size: 0.75rem;
+      font-family: var(--font);
+      transition: all 0.2s;
+    }
+    .code-block .copy-code:hover { background: rgba(255,255,255,0.1); color: var(--text); }
+    .code-panel { display: none; }
+    .code-panel.active { display: block; }
+    /* Syntax highlights */
+    .hl-kw { color: #c792ea; }
+    .hl-fn { color: #82aaff; }
+    .hl-str { color: #c3e88d; }
+    .hl-num { color: #f78c6c; }
+    .hl-cm { color: #546e7a; }
+    .hl-type { color: #ffcb6b; }
+    .hl-op { color: #89ddff; }
+    .hl-br { color: #89ddff; }
+
+    /* =========== API TABLE =========== */
+    .api-table-wrap {
+      overflow-x: auto;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+    }
+    .api-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.95rem;
+    }
+    .api-table th {
+      background: rgba(255,255,255,0.04);
+      padding: 1rem 1.25rem;
+      text-align: left;
+      font-weight: 600;
+      color: var(--text);
+      border-bottom: 1px solid var(--border);
+    }
+    .api-table td {
+      padding: 0.85rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-dim);
+    }
+    .api-table tr:last-child td { border-bottom: none; }
+    .api-table code {
+      font-family: var(--mono);
+      font-size: 0.85rem;
+      color: var(--accent3);
+      background: rgba(124,58,237,0.08);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+    }
+
+    /* =========== BENCHMARKS =========== */
+    .bench-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.5rem;
+    }
+    .bench-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2rem;
+      text-align: center;
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+    .bench-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 40px rgba(124,58,237,0.1);
+    }
+    .bench-value {
+      font-size: 2.5rem;
+      font-weight: 800;
+      font-family: var(--mono);
+      background: var(--gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 0.25rem;
+    }
+    .bench-unit {
+      font-size: 1rem;
+      color: var(--text-dim);
+      font-family: var(--mono);
+    }
+    .bench-label {
+      font-size: 0.85rem;
+      color: var(--text-dim);
+      margin-top: 0.75rem;
+    }
+
+    /* =========== FOOTER =========== */
+    footer {
+      position: relative;
+      z-index: 1;
+      border-top: 1px solid var(--border);
+      padding: 3rem 2rem;
+      text-align: center;
+    }
+    .footer-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.5rem;
+    }
+    .footer-links {
+      display: flex;
+      gap: 2rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .footer-links a {
+      color: var(--text-dim);
+      font-size: 0.9rem;
+      transition: color 0.2s;
+    }
+    .footer-links a:hover { color: var(--text); text-decoration: none; }
+    .footer-copy {
+      color: var(--text-dim);
+      font-size: 0.85rem;
+    }
+    .footer-copy .heart { color: #ef4444; }
+    .footer-author {
+      background: var(--gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-weight: 600;
+      transition: filter 0.3s;
+    }
+    .footer-author:hover {
+      filter: brightness(1.3);
+      text-decoration: none;
+    }
+
+    /* =========== DIVIDER =========== */
+    .gradient-divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--accent1), var(--accent2), transparent);
+      opacity: 0.3;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    /* =========== RESPONSIVE =========== */
+    @media (max-width: 768px) {
+      section { padding: 4rem 1.25rem; }
+      .hero { padding-top: 6rem; }
+      .hero-title { font-size: clamp(2.5rem, 12vw, 4rem); }
+      .features-grid { grid-template-columns: 1fr; }
+      .speed-item { flex-direction: column; align-items: stretch; gap: 0.5rem; }
+      .speed-label { text-align: left; min-width: auto; }
+      .nav-links a:not(.nav-btn) { display: none; }
+      .stats-bar { gap: 2rem; }
+      .demo-container { padding: 1.5rem; }
+      .bench-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 480px) {
+      .bench-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <canvas id="particles"></canvas>
+
+  <!-- NAV -->
+  <nav>
+    <span class="nav-logo">quickfuzz</span>
+    <div class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#demo">Demo</a>
+      <a href="#api">API</a>
+      <a href="https://github.com/LittleBoy9/quickfuzz" target="_blank" class="nav-btn">GitHub</a>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-badge">
+      <span class="dot"></span>
+      Open Source
+    </div>
+    <h1 class="hero-title"><span class="gradient-text">quickfuzz</span></h1>
+    <p class="hero-tagline">Blazing-fast, zero-dependency fuzzy search for JavaScript & TypeScript. Optimized for small datasets. Built for speed.</p>
+    <div class="install-box">
+      <span class="dollar">$</span>
+      <code>npm install quickfuzz</code>
+      <button class="copy-btn" onclick="copyInstall(this)" title="Copy">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      </button>
+    </div>
+    <div class="hero-ctas">
+      <a href="https://www.npmjs.com/package/quickfuzz" target="_blank" class="btn btn-primary">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M0 0v24h24V0H0zm19.2 19.2H12V7.2h3.6v8.4h3.6V4.8H4.8v14.4z"/></svg>
+        View on npm
+      </a>
+      <a href="https://github.com/LittleBoy9/quickfuzz" target="_blank" class="btn btn-secondary">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.44 9.8 8.2 11.39.6.11.82-.26.82-.58 0-.28-.01-1.03-.02-2.03-3.34.73-4.04-1.61-4.04-1.61-.55-1.39-1.34-1.76-1.34-1.76-1.09-.75.08-.73.08-.73 1.21.08 1.85 1.24 1.85 1.24 1.07 1.84 2.81 1.31 3.5 1 .11-.78.42-1.31.76-1.61-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.12-.3-.54-1.52.12-3.18 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 016.02 0c2.28-1.55 3.29-1.23 3.29-1.23.66 1.66.24 2.88.12 3.18.77.84 1.24 1.91 1.24 3.22 0 4.61-2.81 5.63-5.48 5.92.43.37.81 1.1.81 2.22 0 1.6-.01 2.89-.01 3.28 0 .32.22.7.83.58C20.57 21.8 24 17.3 24 12c0-6.63-5.37-12-12-12z"/></svg>
+        GitHub
+      </a>
+    </div>
+    <div class="stats-bar">
+      <div class="stat">
+        <div class="stat-value" data-count="0.12">0</div>
+        <div class="stat-label">ms avg (1K items)</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value" data-count="0">0</div>
+        <div class="stat-label">dependencies</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value" data-count="4" data-suffix="KB">0</div>
+        <div class="stat-label">bundle size</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value" data-count="100" data-suffix="%">0</div>
+        <div class="stat-label">TypeScript</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="gradient-divider"></div>
+
+  <!-- SPEED COMPARISON -->
+  <section id="speed">
+    <div class="section-label reveal">Performance</div>
+    <h2 class="section-title reveal reveal-delay-1">Faster than the competition</h2>
+    <p class="section-desc reveal reveal-delay-2">benchmarked on 1,000 items — up to ~7x faster than traditional fuzzy search libraries</p>
+    <div class="speed-bars">
+      <div class="speed-item reveal reveal-delay-3">
+        <div class="speed-label" style="color:var(--accent2)">quickfuzz</div>
+        <div class="speed-track">
+          <div class="speed-fill qf" data-width="13%">0.12ms
+            <span class="speed-tag">7x faster</span>
+          </div>
+        </div>
+      </div>
+      <div class="speed-item reveal reveal-delay-4">
+        <div class="speed-label">Others</div>
+        <div class="speed-track">
+          <div class="speed-fill others" data-width="100%">~1.5ms</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="gradient-divider"></div>
+
+  <!-- FEATURES -->
+  <section id="features">
+    <div class="section-label reveal">Features</div>
+    <h2 class="section-title reveal reveal-delay-1">Everything you need, nothing you don't</h2>
+    <p class="section-desc reveal reveal-delay-2">Built to be fast, small, and easy to use.</p>
+    <div class="features-grid">
+      <div class="feature-card reveal reveal-delay-1">
+        <div class="feature-icon">&#9889;</div>
+        <h3>Blazing Fast</h3>
+        <p>Optimized sequential matching algorithm delivers results in under 0.2ms for 1,000 items. No heavy indexing step.</p>
+      </div>
+      <div class="feature-card reveal reveal-delay-2">
+        <div class="feature-icon">&#128230;</div>
+        <h3>Zero Dependencies</h3>
+        <p>Nothing to audit, nothing to break. The entire library is self-contained with no external packages.</p>
+      </div>
+      <div class="feature-card reveal reveal-delay-3">
+        <div class="feature-icon">&#128736;</div>
+        <h3>Full TypeScript</h3>
+        <p>Generics, key inference, and IntelliSense out of the box. Your IDE knows your data shape.</p>
+      </div>
+      <div class="feature-card reveal reveal-delay-4">
+        <div class="feature-icon">&#127919;</div>
+        <h3>Configurable Threshold</h3>
+        <p>Human-readable threshold from 1 (loose) to 10 (strict). No confusing 0.0–1.0 floats.</p>
+      </div>
+      <div class="feature-card reveal reveal-delay-5">
+        <div class="feature-icon">&#128269;</div>
+        <h3>Multi-Key Search</h3>
+        <p>Search across multiple object fields at once. Perfect for user directories, product catalogs, and more.</p>
+      </div>
+      <div class="feature-card reveal reveal-delay-1">
+        <div class="feature-icon">&#10024;</div>
+        <h3>Match Highlighting</h3>
+        <p>Get exact matched character indices with <code>.search()</code>. Build highlighted results in your UI.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="gradient-divider"></div>
+
+  <!-- LIVE DEMO -->
+  <section id="demo">
+    <div class="section-label reveal">Try it</div>
+    <h2 class="section-title reveal reveal-delay-1">Live demo</h2>
+    <p class="section-desc reveal reveal-delay-2">Type anything below — this is the actual algorithm running in your browser right now.</p>
+    <div class="demo-container reveal reveal-delay-3">
+      <div class="demo-inner">
+        <div class="demo-input-wrap">
+          <span class="search-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </span>
+          <input class="demo-input" type="text" placeholder="Try: aple, hobit, javscript..." id="demoInput" autocomplete="off" />
+        </div>
+        <div class="demo-results" id="demoResults">
+          <div class="demo-placeholder">Start typing to search...</div>
+        </div>
+        <div class="demo-time" id="demoTime"></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="gradient-divider"></div>
+
+  <!-- CODE EXAMPLES -->
+  <section id="code">
+    <div class="section-label reveal">Examples</div>
+    <h2 class="section-title reveal reveal-delay-1">Simple by design</h2>
+    <p class="section-desc reveal reveal-delay-2">One import. One function. You're done.</p>
+    <div class="code-section reveal reveal-delay-3">
+      <div class="code-tabs">
+        <button class="code-tab active" data-tab="strings">Strings</button>
+        <button class="code-tab" data-tab="objects">Objects</button>
+        <button class="code-tab" data-tab="details">Match Details</button>
+        <button class="code-tab" data-tab="highlight">Highlight</button>
+      </div>
+      <div class="code-block">
+        <button class="copy-code" onclick="copyCode(this)">Copy</button>
+
+        <div class="code-panel active" id="tab-strings"><pre><span class="hl-kw">import</span> <span class="hl-br">{</span> createFuzzySearch <span class="hl-br">}</span> <span class="hl-kw">from</span> <span class="hl-str">"quickfuzz"</span><span class="hl-op">;</span>
+
+<span class="hl-kw">const</span> fruits <span class="hl-op">=</span> <span class="hl-br">[</span><span class="hl-str">"apple"</span><span class="hl-op">,</span> <span class="hl-str">"pineapple"</span><span class="hl-op">,</span> <span class="hl-str">"grape"</span><span class="hl-op">,</span> <span class="hl-str">"banana"</span><span class="hl-br">]</span><span class="hl-op">;</span>
+
+<span class="hl-kw">const</span> search <span class="hl-op">=</span> <span class="hl-fn">createFuzzySearch</span><span class="hl-br">(</span>fruits<span class="hl-op">,</span> <span class="hl-br">{</span> threshold<span class="hl-op">:</span> <span class="hl-num">5</span> <span class="hl-br">}</span><span class="hl-br">)</span><span class="hl-op">;</span>
+
+<span class="hl-fn">search</span><span class="hl-br">(</span><span class="hl-str">"aple"</span><span class="hl-br">)</span><span class="hl-op">;</span>   <span class="hl-cm">// ["apple"]</span>
+<span class="hl-fn">search</span><span class="hl-br">(</span><span class="hl-str">"ban"</span><span class="hl-br">)</span><span class="hl-op">;</span>    <span class="hl-cm">// ["banana"]</span></pre></div>
+
+        <div class="code-panel" id="tab-objects"><pre><span class="hl-kw">import</span> <span class="hl-br">{</span> createFuzzySearch <span class="hl-br">}</span> <span class="hl-kw">from</span> <span class="hl-str">"quickfuzz"</span><span class="hl-op">;</span>
+
+<span class="hl-kw">const</span> users <span class="hl-op">=</span> <span class="hl-br">[</span>
+  <span class="hl-br">{</span> name<span class="hl-op">:</span> <span class="hl-str">"Alice Johnson"</span><span class="hl-op">,</span> email<span class="hl-op">:</span> <span class="hl-str">"alice@example.com"</span> <span class="hl-br">}</span><span class="hl-op">,</span>
+  <span class="hl-br">{</span> name<span class="hl-op">:</span> <span class="hl-str">"Bob Smith"</span><span class="hl-op">,</span> email<span class="hl-op">:</span> <span class="hl-str">"bob@example.com"</span> <span class="hl-br">}</span><span class="hl-op">,</span>
+<span class="hl-br">]</span><span class="hl-op">;</span>
+
+<span class="hl-cm">// Search across multiple keys</span>
+<span class="hl-kw">const</span> search <span class="hl-op">=</span> <span class="hl-fn">createFuzzySearch</span><span class="hl-br">(</span>users<span class="hl-op">,</span> <span class="hl-br">{</span>
+  key<span class="hl-op">:</span> <span class="hl-br">[</span><span class="hl-str">"name"</span><span class="hl-op">,</span> <span class="hl-str">"email"</span><span class="hl-br">]</span><span class="hl-op">,</span>
+  threshold<span class="hl-op">:</span> <span class="hl-num">4</span><span class="hl-op">,</span>
+  maxResults<span class="hl-op">:</span> <span class="hl-num">5</span><span class="hl-op">,</span>
+<span class="hl-br">}</span><span class="hl-br">)</span><span class="hl-op">;</span>
+
+<span class="hl-fn">search</span><span class="hl-br">(</span><span class="hl-str">"bob"</span><span class="hl-br">)</span><span class="hl-op">;</span>
+<span class="hl-cm">// [{ name: "Bob Smith", email: "bob@example.com" }]</span></pre></div>
+
+        <div class="code-panel" id="tab-details"><pre><span class="hl-kw">import</span> <span class="hl-br">{</span> createFuzzySearch <span class="hl-br">}</span> <span class="hl-kw">from</span> <span class="hl-str">"quickfuzz"</span><span class="hl-op">;</span>
+
+<span class="hl-kw">const</span> search <span class="hl-op">=</span> <span class="hl-fn">createFuzzySearch</span><span class="hl-br">(</span>
+  <span class="hl-br">[</span><span class="hl-str">"apple"</span><span class="hl-op">,</span> <span class="hl-str">"pineapple"</span><span class="hl-br">]</span><span class="hl-op">,</span>
+  <span class="hl-br">{</span> threshold<span class="hl-op">:</span> <span class="hl-num">5</span> <span class="hl-br">}</span>
+<span class="hl-br">)</span><span class="hl-op">;</span>
+
+<span class="hl-cm">// Use .search() for full details</span>
+search.<span class="hl-fn">search</span><span class="hl-br">(</span><span class="hl-str">"aple"</span><span class="hl-br">)</span><span class="hl-op">;</span>
+<span class="hl-cm">// [</span>
+<span class="hl-cm">//   { item: "apple",     score: 0.71, matches: [0,1,3,4] },</span>
+<span class="hl-cm">//   { item: "pineapple", score: 0.59, matches: [4,5,7,8] }</span>
+<span class="hl-cm">// ]</span></pre></div>
+
+        <div class="code-panel" id="tab-highlight"><pre><span class="hl-kw">function</span> <span class="hl-fn">highlight</span><span class="hl-br">(</span>text<span class="hl-op">:</span> <span class="hl-type">string</span><span class="hl-op">,</span> indices<span class="hl-op">:</span> <span class="hl-type">number</span><span class="hl-br">[]</span><span class="hl-br">)</span> <span class="hl-br">{</span>
+  <span class="hl-kw">return</span> text
+    .<span class="hl-fn">split</span><span class="hl-br">(</span><span class="hl-str">""</span><span class="hl-br">)</span>
+    .<span class="hl-fn">map</span><span class="hl-br">((</span>c<span class="hl-op">,</span> i<span class="hl-br">)</span> <span class="hl-op">=></span>
+      indices.<span class="hl-fn">includes</span><span class="hl-br">(</span>i<span class="hl-br">)</span> <span class="hl-op">?</span> <span class="hl-str">`&lt;b&gt;${</span>c<span class="hl-str">}&lt;/b&gt;`</span> <span class="hl-op">:</span> c
+    <span class="hl-br">)</span>
+    .<span class="hl-fn">join</span><span class="hl-br">(</span><span class="hl-str">""</span><span class="hl-br">)</span><span class="hl-op">;</span>
+<span class="hl-br">}</span>
+
+<span class="hl-fn">highlight</span><span class="hl-br">(</span><span class="hl-str">"apple"</span><span class="hl-op">,</span> <span class="hl-br">[</span><span class="hl-num">0</span><span class="hl-op">,</span><span class="hl-num">1</span><span class="hl-op">,</span><span class="hl-num">3</span><span class="hl-op">,</span><span class="hl-num">4</span><span class="hl-br">]</span><span class="hl-br">)</span><span class="hl-op">;</span>
+<span class="hl-cm">// "&lt;b&gt;a&lt;/b&gt;&lt;b&gt;p&lt;/b&gt;p&lt;b&gt;l&lt;/b&gt;&lt;b&gt;e&lt;/b&gt;"</span></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="gradient-divider"></div>
+
+  <!-- API -->
+  <section id="api">
+    <div class="section-label reveal">API</div>
+    <h2 class="section-title reveal reveal-delay-1">Configuration</h2>
+    <p class="section-desc reveal reveal-delay-2"><code style="font-family:var(--mono);color:var(--accent3);background:rgba(124,58,237,0.08);padding:0.15rem 0.4rem;border-radius:4px;">createFuzzySearch(data, options?)</code></p>
+    <div class="api-table-wrap reveal reveal-delay-3">
+      <table class="api-table">
+        <thead>
+          <tr>
+            <th>Option</th>
+            <th>Type</th>
+            <th>Default</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>key</code></td>
+            <td><code>keyof T | (keyof T)[]</code></td>
+            <td>—</td>
+            <td>Object key(s) to search</td>
+          </tr>
+          <tr>
+            <td><code>threshold</code></td>
+            <td><code>1–10</code></td>
+            <td><code>5</code></td>
+            <td>Match strictness (1 = loose, 10 = strict)</td>
+          </tr>
+          <tr>
+            <td><code>caseSensitive</code></td>
+            <td><code>boolean</code></td>
+            <td><code>false</code></td>
+            <td>Enable case-sensitive matching</td>
+          </tr>
+          <tr>
+            <td><code>maxResults</code></td>
+            <td><code>number</code></td>
+            <td>unlimited</td>
+            <td>Cap the number of returned results</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="gradient-divider"></div>
+
+  <!-- BENCHMARKS -->
+  <section id="benchmarks">
+    <div class="section-label reveal">Benchmarks</div>
+    <h2 class="section-title reveal reveal-delay-1">Numbers don't lie</h2>
+    <p class="section-desc reveal reveal-delay-2">Averaged over 100 runs. Tested on real datasets.</p>
+    <div class="bench-grid">
+      <div class="bench-card reveal reveal-delay-1">
+        <div class="bench-value" data-bench="0.12">0</div>
+        <div class="bench-unit">ms</div>
+        <div class="bench-label">1,000 strings</div>
+      </div>
+      <div class="bench-card reveal reveal-delay-2">
+        <div class="bench-value" data-bench="0.44">0</div>
+        <div class="bench-unit">ms</div>
+        <div class="bench-label">5,000 strings</div>
+      </div>
+      <div class="bench-card reveal reveal-delay-3">
+        <div class="bench-value" data-bench="0.88">0</div>
+        <div class="bench-unit">ms</div>
+        <div class="bench-label">10,000 strings</div>
+      </div>
+      <div class="bench-card reveal reveal-delay-4">
+        <div class="bench-value" data-bench="1.0">0</div>
+        <div class="bench-unit">ms</div>
+        <div class="bench-label">5,000 objects (2 keys)</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-inner">
+      <span class="nav-logo" style="font-size:1.5rem;">quickfuzz</span>
+      <div class="footer-links">
+        <a href="https://www.npmjs.com/package/quickfuzz" target="_blank">npm</a>
+        <a href="https://github.com/LittleBoy9/quickfuzz" target="_blank">GitHub</a>
+        <a href="https://github.com/LittleBoy9/quickfuzz/issues" target="_blank">Issues</a>
+        <a href="https://sounakdas.in" target="_blank">Author</a>
+      </div>
+      <p class="footer-copy">MIT &copy; 2026 — Made with <span class="heart">&hearts;</span> by <a href="https://sounakdas.in" target="_blank" class="footer-author">Sounak Das</a></p>
+    </div>
+  </footer>
+
+  <script>
+    // =========== PARTICLES ===========
+    const canvas = document.getElementById('particles');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+    const PARTICLE_COUNT = 80;
+    const CONNECTION_DIST = 150;
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    class Particle {
+      constructor() {
+        this.x = Math.random() * canvas.width;
+        this.y = Math.random() * canvas.height;
+        this.vx = (Math.random() - 0.5) * 0.5;
+        this.vy = (Math.random() - 0.5) * 0.5;
+        this.radius = Math.random() * 2 + 0.5;
+        this.opacity = Math.random() * 0.5 + 0.1;
+      }
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        if (this.x < 0 || this.x > canvas.width) this.vx *= -1;
+        if (this.y < 0 || this.y > canvas.height) this.vy *= -1;
+      }
+      draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(124, 58, 237, ${this.opacity})`;
+        ctx.fill();
+      }
+    }
+
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      particles.push(new Particle());
+    }
+
+    function animateParticles() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (let i = 0; i < particles.length; i++) {
+        particles[i].update();
+        particles[i].draw();
+        for (let j = i + 1; j < particles.length; j++) {
+          const dx = particles[i].x - particles[j].x;
+          const dy = particles[i].y - particles[j].y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < CONNECTION_DIST) {
+            ctx.beginPath();
+            ctx.moveTo(particles[i].x, particles[i].y);
+            ctx.lineTo(particles[j].x, particles[j].y);
+            ctx.strokeStyle = `rgba(124, 58, 237, ${0.08 * (1 - dist / CONNECTION_DIST)})`;
+            ctx.lineWidth = 0.5;
+            ctx.stroke();
+          }
+        }
+      }
+      requestAnimationFrame(animateParticles);
+    }
+    animateParticles();
+
+    // =========== NAV SCROLL ===========
+    const nav = document.querySelector('nav');
+    window.addEventListener('scroll', () => {
+      nav.classList.toggle('scrolled', window.scrollY > 50);
+    });
+
+    // =========== SCROLL REVEAL ===========
+    const revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+        }
+      });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+
+    // =========== SPEED BARS ===========
+    const speedObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.querySelectorAll('.speed-fill').forEach(bar => {
+            bar.style.width = bar.dataset.width;
+          });
+        }
+      });
+    }, { threshold: 0.3 });
+    document.querySelectorAll('.speed-bars').forEach(el => speedObserver.observe(el));
+
+    // =========== STAT COUNTERS ===========
+    function animateCounter(el, target, suffix = '', duration = 2000) {
+      const start = performance.now();
+      const isFloat = target % 1 !== 0;
+      function update(now) {
+        const elapsed = now - start;
+        const progress = Math.min(elapsed / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        const current = target * eased;
+        el.textContent = (isFloat ? current.toFixed(2) : Math.round(current)) + suffix;
+        if (progress < 1) requestAnimationFrame(update);
+      }
+      requestAnimationFrame(update);
+    }
+
+    const statsObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting && !entry.target.dataset.animated) {
+          entry.target.dataset.animated = 'true';
+          entry.target.querySelectorAll('[data-count]').forEach(el => {
+            const target = parseFloat(el.dataset.count);
+            const suffix = el.dataset.suffix || (target % 1 !== 0 ? 'ms' : '');
+            animateCounter(el, target, suffix);
+          });
+        }
+      });
+    }, { threshold: 0.5 });
+    document.querySelectorAll('.stats-bar').forEach(el => statsObserver.observe(el));
+
+    // =========== BENCH COUNTERS ===========
+    const benchObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting && !entry.target.dataset.animated) {
+          entry.target.dataset.animated = 'true';
+          entry.target.querySelectorAll('[data-bench]').forEach(el => {
+            const target = parseFloat(el.dataset.bench);
+            animateCounter(el, target, '', 1500);
+          });
+        }
+      });
+    }, { threshold: 0.3 });
+    document.querySelectorAll('.bench-grid').forEach(el => benchObserver.observe(el));
+
+    // =========== CODE TABS ===========
+    document.querySelectorAll('.code-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        const tabId = tab.dataset.tab;
+        tab.parentElement.querySelectorAll('.code-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        tab.closest('.code-section').querySelectorAll('.code-panel').forEach(p => p.classList.remove('active'));
+        document.getElementById('tab-' + tabId).classList.add('active');
+      });
+    });
+
+    // =========== COPY ===========
+    function copyInstall(btn) {
+      navigator.clipboard.writeText('npm install quickfuzz');
+      btn.classList.add('copied');
+      btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+      setTimeout(() => {
+        btn.classList.remove('copied');
+        btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+      }, 2000);
+    }
+
+    function copyCode(btn) {
+      const panel = btn.closest('.code-block').querySelector('.code-panel.active pre');
+      navigator.clipboard.writeText(panel.textContent);
+      btn.textContent = 'Copied!';
+      setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
+    }
+
+    // =========== LIVE DEMO (EMBEDDED FUZZY SEARCH) ===========
+    function fuzzyMatch(query, target) {
+      const q = query.toLowerCase();
+      const t = target.toLowerCase();
+      if (!q || !t) return { score: 0, matches: [] };
+      if (q === t) return { score: 1, matches: Array.from({ length: t.length }, (_, i) => i) };
+      if (t.includes(q)) {
+        const idx = t.indexOf(q);
+        const pos = 1 - idx / t.length;
+        const len = q.length / t.length;
+        return { score: 0.8 + 0.1 * pos + 0.1 * len, matches: Array.from({ length: q.length }, (_, i) => idx + i) };
+      }
+      let qIdx = 0, score = 0, consec = 0, first = -1;
+      const matches = [];
+      for (let i = 0; i < t.length && qIdx < q.length; i++) {
+        if (t[i] === q[qIdx]) {
+          if (first === -1) first = i;
+          consec++;
+          score += consec * consec;
+          matches.push(i);
+          qIdx++;
+        } else { consec = 0; }
+      }
+      if (qIdx < q.length) return { score: 0, matches: [] };
+      const max = q.length * q.length;
+      let norm = score / max;
+      norm = norm * 0.7 + (1 - first / t.length) * 0.15 + (q.length / t.length) * 0.15;
+      return { score: Math.min(norm, 0.79), matches };
+    }
+
+    const DEMO_DATA = [
+      "apple", "pineapple", "banana", "mango", "grape", "orange", "cherry",
+      "strawberry", "blueberry", "watermelon", "kiwi", "peach", "plum",
+      "avocado", "coconut", "lemon", "lime", "papaya", "guava", "dragonfruit",
+      "javascript", "typescript", "python", "rust", "golang",
+      "react", "vue", "angular", "svelte", "nextjs",
+      "The Hobbit", "The Lord of the Rings", "Harry Potter", "The Great Gatsby",
+      "Pride and Prejudice", "To Kill a Mockingbird", "1984", "Brave New World"
+    ];
+    const MIN_SCORE = 0.05 + (5 - 1) * (0.69 / 9);
+
+    const demoInput = document.getElementById('demoInput');
+    const demoResults = document.getElementById('demoResults');
+    const demoTime = document.getElementById('demoTime');
+
+    demoInput.addEventListener('input', () => {
+      const query = demoInput.value.trim();
+      if (!query) {
+        demoResults.innerHTML = '<div class="demo-placeholder">Start typing to search...</div>';
+        demoTime.innerHTML = '';
+        return;
+      }
+      const t0 = performance.now();
+      const results = [];
+      for (const item of DEMO_DATA) {
+        const r = fuzzyMatch(query, item);
+        if (r.score >= MIN_SCORE) results.push({ item, ...r });
+      }
+      results.sort((a, b) => b.score - a.score);
+      const elapsed = (performance.now() - t0).toFixed(3);
+
+      if (results.length === 0) {
+        demoResults.innerHTML = '<div class="demo-placeholder">No matches found</div>';
+      } else {
+        demoResults.innerHTML = results.slice(0, 8).map(r => {
+          const highlighted = r.item.split('').map((c, i) =>
+            r.matches.includes(i) ? `<span class="match-char">${c}</span>` : c
+          ).join('');
+          return `<div class="demo-result"><span>${highlighted}</span><span class="score">${r.score.toFixed(3)}</span></div>`;
+        }).join('');
+      }
+      demoTime.innerHTML = `Found <span>${results.length}</span> results in <span>${elapsed}ms</span>`;
+    });
+  </script>
+</body>
+</html>

@@ -26,11 +26,11 @@ Most fuzzy search libraries are built for large-scale, server-side search. They 
 - Quick-find / filter UIs
 - Search bars for lists & tables
 
-| | quickfuzz | Fuse.js |
+| | quickfuzz | Traditional libraries |
 |---|---|---|
 | **1,000 items** | ~0.12ms | ~1.5ms |
 | **Bundle size** | ~4KB | ~20KB+ |
-| **Dependencies** | 0 | 0 |
+| **Dependencies** | 0 | varies |
 | **Setup** | 1 function | Class + config object |
 
 ---
